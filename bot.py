@@ -1,158 +1,105 @@
 #!/usr/bin/env python3
 
-from collections import OrderedDict
-from json import loads, dumps
-from verbose import *
+from verbose import Log
 import config
+import pickle
 import praw
 import re
-import urllib.request
-import urllib.parse
 
-class Wiki:
-	URL_BASE = 'http://destiny.wikia.com/api/v1/'
+Log.ENABLED = config.debug
 
-	@staticmethod
-	@log('', format='[*] {2[0]}')
-	def _open(url):
-		with urllib.request.urlopen(url) as request:
-			res = request.read()
-		return res
+class Matcher:
+	@Log.wrap('Initializing matcher')
+	def __init__(self, name, ptrn, func):
+		self.__name = name
+		self.__ptrn = ptrn
+		self.__func = func
 
-	@staticmethod
-	@log('looking up item url', format='[{0}] {1}: {2[0]}')
-	def item_lookup(id):
-		options = {'ids': id}
-		params = urllib.parse.urlencode(options)
-		url = '%sArticles/Details?%s' % (Wiki.URL_BASE, params)
-		res = Wiki._open(url)
-		json = loads(res.decode())
-		# Wiki.pretty_print(json)
-		return '%s%s' % (json['basepath'], json['items'][str(id)]['url'])
+	@property
+	def name(self):
+		return self.__name
 
-	@staticmethod
-	@log('searching', format='[{0}] {1}: {2[0]}')
-	def search(query, limit=1):
-		options = {'query': query, 'limit': limit}
-		params = urllib.parse.urlencode(options)
-		url = '%sSearch/List?%s' % (Wiki.URL_BASE, params)
-		res = Wiki._open(url)
-		return loads(res.decode())
+	@property
+	def function(self):
+		return self.__func
 
-	@staticmethod
-	@log('getting page source', format='[{0}] {1}: {2[0]}')
-	def page_source(item_url):
-		options = {'action': 'raw'}
-		params = urllib.parse.urlencode(options)
-		url = '%s?%s' % (item_url, params)
-		res = Wiki._open(url)
-		return res.decode()
+	@property
+	def pattern(self):
+		return self.__ptrn
 
-	@staticmethod
-	@log('parsing section', format='[{0}] {1}: {2[1]}')
-	def page_section(raw, section):
-		return re.findall('\{\{%s(.*?)\}\}' % section, raw, re.DOTALL)[0]
+	def safe_execute(self, context):
+		try:
+			self.function(context)
+		except Exception as e:
+			Log.print(e, tag=self.name, level=Log.ERROR)
 
-	@staticmethod
-	@log('extracting Infobox data')
-	def item_infobox(raw):
-		match = Wiki.page_section(raw, 'Infobox')
-		info = {}
-		for line in match.split('\n'):
-			try:
-				key, value = line.split('=', 1)
-			except:
-				pass
-			else:
-				key = key[1:]
-				if key and value:
-					info[key] = value
-		return info
-
-	@staticmethod
-	def pretty_print(json):
-		print(dumps(json, indent=2))
-
-class Reddit:
-	def __init__(self):
+class RedditBot:
+	@Log.wrap('Initializing bot')
+	def __init__(self,
+	             user_agent='sample bot user agent v0.0',
+	             subreddits=['all'],
+	             name='bot'):
 		self.__config = None
+		self.__replies = None
+		self.__matchers = []
+		self.subreddits = subreddits
+		self.__name = name
 		self.r = praw.Reddit(username      = config.username,
 		                     password      = config.password,
 		                     client_id     = config.client_id,
 		                     client_secret = config.client_secret,
-		                     user_agent    = 'destiny item bot v0.1')
-		self.replies = []
+		                     user_agent    = user_agent)
 
 	@property
-	def subreddits(self):
-		return ['DestinyTheGame', 'CruciblePlaybook']
+	def name(self):
+		return self.__name
 
-	def run(self):
-		subreddit = self.r.subreddit('+'.join(self.subreddits))
-		for comment in subreddit.stream.comments():
-			if comment.id in self.replies:
-				continue
+	@property
+	def replies(self):
+		if self.__replies is None:
 			try:
-				matches = re.findall('\[\[(.*?)\]\]', comment.body, re.DOTALL)
-				for m in matches:
-					weapon_info = find_weapon(m)
-					msg = create_weapon_reply(weapon_info)
-					self.replies.append(comment.id)
-					comment.reply(msg)
-			except Exception as e:
-				print(e)
+				with open('cache', 'rb') as f:
+					self.__replies = pickle.load(f)
+			except:
+				Log.print('could not load previous replies', level=Log.WARN)
+				self.__replies = []
 			else:
-				print('Successfully replied')
+				Log.print('loaded replies', tag=self.name)
+		return self.__replies
 
-def create_weapon_reply(info):
-	url = info['url'].replace('(', '\(')
-	url = url.replace(')', '\)')
-	msg = '[%s](%s)' % (info['name'], url)
-	msg += ' - %s %s (%s)' % (info['rarity'], info['type'], info['slot'])
-	msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
-	for k in info:
-		if k in ['name', 'rarity', 'type', 'slot', 'url']:
-			continue
-		msg += '%s | %s\n' % (k.ljust(13), info[k].ljust(9))
-	return msg
+	@Log.wrap('registered new matcher', format='[{0}] {1}: {3.name}')
+	def register_matcher(self, matcher):
+		self.__matchers.append(matcher)
 
-def format_weapon_info(info):
-	key_filter = ['name',
-	              'slot',
-	              'rarity',
-	              'type',
-	              # 'manufacturer',
-	              'impact',
-	              'range',
-	              'recoil',
-	              'stability',
-	              ('magazine', 'magazine size'),
-	              ('reload', 'reload speed'),
-	              'zoom',
-	              ('rate', 'rate of fire'),
-	              ('aim', 'aim assist'),
-	              ('equipspeed', 'equip speed')]
-	d = OrderedDict()
-	for k in key_filter:
+	@Log.wrap('starting', format='[{0}] {1}: {2.name}')
+	def run(self):
+		if not self.__matchers:
+			Log.print('No matchers found', level=Log.WARN)
+		if not self.subreddits:
+			Log.print('No subreddits found', level=Log.WARN)
 		try:
-			if type(k) is tuple:
-				d[k[1]] = info[k[0]]
-			else:
-				d[k] = info[k]
-		except:
-			pass
-	return d
-
-def find_weapon(name):
-	json_search = Wiki.search(name)
-	item_id = json_search['items'][0]['id']
-	item_url = Wiki.item_lookup(item_id)
-	source = Wiki.page_source(item_url)
-	info = Wiki.item_infobox(source)
-	weapon_info = format_weapon_info(info)
-	weapon_info['url'] = item_url # include url with weapon info
-	Wiki.pretty_print(weapon_info)
-	return weapon_info
+			subreddit = self.r.subreddit('+'.join(self.subreddits))
+			for comment in subreddit.stream.comments():
+				# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
+				if comment.id in self.replies: continue
+				for matcher in self.__matchers:
+					matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
+					for m in matches:
+						msg = matcher.safe_execute(m)
+						if not config.debug: # suppress writing to reddit
+							self.replies.append(comment.id)
+							comment.reply(msg)
+						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name)
+		except KeyboardInterrupt:
+			Log.print('Shutting down', tag=self.name)
+		finally:
+			Log.print('Storing data...', tag=self.name)
+			with open('cache', 'wb') as f: # save latest 100 replies
+				pickle.dump(self.__replies[-100:], f)
 
 if __name__ == '__main__':
-	Reddit().run()
+	config.debug = True
+	bot = RedditBot()
+	matcher = Matcher('test', '\.(.*?)\.', lambda _: 'hello world')
+	bot.register_matcher(matcher)
+	bot.run()
