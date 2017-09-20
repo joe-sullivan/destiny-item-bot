@@ -92,6 +92,8 @@ class RedditBot:
 						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name)
 		except KeyboardInterrupt:
 			Log.print('Shutting down', tag=self.name)
+		except Exception as e:
+			Log.print(e, level=Log.ERROR)
 		finally:
 			Log.print('Storing data...', tag=self.name)
 			with open('cache', 'wb') as f: # save latest 100 replies
