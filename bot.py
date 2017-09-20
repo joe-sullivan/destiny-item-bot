@@ -29,7 +29,7 @@ class Matcher:
 
 	def safe_execute(self, context):
 		try:
-			self.function(context)
+			return self.function(context)
 		except Exception as e:
 			Log.print(e, tag=self.name, level=Log.ERROR)
 
