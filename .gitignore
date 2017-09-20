@@ -2,3 +2,6 @@ config.py
 log
 cache
 __pycache__/*
+bin/*
+venv/*
+pyvenv.cfg
