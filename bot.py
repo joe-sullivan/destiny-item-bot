@@ -40,7 +40,7 @@ class RedditBot:
 	             subreddits=['all'],
 	             name='bot'):
 		self.__config = None
-		self.__replies = None
+		self.__viewed = None
 		self.__matchers = []
 		self.subreddits = subreddits
 		self.__name = name
@@ -55,17 +55,17 @@ class RedditBot:
 		return self.__name
 
 	@property
-	def replies(self):
-		if self.__replies is None:
+	def viewed(self):
+		if self.__viewed is None:
 			try:
 				with open('cache', 'rb') as f:
-					self.__replies = pickle.load(f)
+					self.__viewed = pickle.load(f)
 			except:
-				Log.print('could not load previous replies', level=Log.WARN)
-				self.__replies = []
+				Log.print('could not load previously viewed comments', level=Log.WARN)
+				self.__viewed = []
 			else:
-				Log.print('loaded replies', tag=self.name)
-		return self.__replies
+				Log.print('loaded previously viewed comments', tag=self.name)
+		return self.__viewed
 
 	@Log.wrap('registered new matcher', format='[{0}] {1}: {3.name}')
 	def register_matcher(self, matcher):
@@ -81,13 +81,13 @@ class RedditBot:
 			subreddit = self.r.subreddit('+'.join(self.subreddits))
 			for comment in subreddit.stream.comments():
 				# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
-				if comment.id in self.replies: continue
+				if comment.id in self.viewed: continue
+				self.viewed.append(comment.id)
 				for matcher in self.__matchers:
 					matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
 					for m in matches:
 						msg = matcher.safe_execute(m)
 						if not config.debug: # suppress writing to reddit
-							self.replies.append(comment.id)
 							comment.reply(msg)
 						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name)
 		except KeyboardInterrupt:
@@ -96,8 +96,8 @@ class RedditBot:
 			Log.print(e, level=Log.ERROR)
 		finally:
 			Log.print('Storing data...', tag=self.name)
-			with open('cache', 'wb') as f: # save latest 100 replies
-				pickle.dump(self.__replies[-100:], f)
+			with open('cache', 'wb') as f: # save latest 100 viewed comments
+				pickle.dump(self.viewed[-100:], f)
 
 if __name__ == '__main__':
 	config.debug = True
