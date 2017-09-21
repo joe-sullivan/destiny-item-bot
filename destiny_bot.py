@@ -74,7 +74,7 @@ class Wiki:
 class DestinyBot(RedditBot):
 	def __init__(self):
 		user_agent = 'destiny item bot v0.1'
-		subreddits = ['DestinyTheGame', 'CruciblePlaybook']
+		subreddits = ['DestinyTheGame']
 		super().__init__(user_agent, subreddits, 'DestinyBot')
 
 def create_weapon_reply(info):
