@@ -47,14 +47,10 @@ class Wiki:
 		return res.decode()
 
 	@staticmethod
-	@Log.wrap('parsing section', format='[{0}] {1}: {3}')
-	def page_section(raw, section):
-		return re.findall('\{\{%s(.*?)\}\}' % section, raw, re.DOTALL)[0]
-
-	@staticmethod
 	@Log.wrap('extracting Infobox data')
 	def item_infobox(raw):
-		match = Wiki.page_section(raw, 'Infobox')
+		pattern = '\{\{Infobox(.*?)\}\}'
+		match = re.findall(pattern, raw, re.DOTALL)[0]
 		info = {}
 		for line in match.split('\n'):
 			try:
@@ -69,7 +65,7 @@ class Wiki:
 
 	@staticmethod
 	def pretty_print(json):
-		Log.print(dumps(json, indent=2), level=Log.DEFAULT)
+		Log.print(dumps(json, indent=2), format='{1}', level=Log.DEFAULT)
 
 class DestinyBot(RedditBot):
 	def __init__(self):
