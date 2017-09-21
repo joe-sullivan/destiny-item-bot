@@ -65,6 +65,7 @@ class RedditBot:
 				self.__viewed = []
 			else:
 				Log.print('loaded previously viewed comments', tag=self.name)
+		self.__viewed = self.__viewed[-1000:] # save latest 100 viewed comments
 		return self.__viewed
 
 	@Log.wrap('registered new matcher', format='[{0}] {1}: {3.name}')
@@ -82,7 +83,7 @@ class RedditBot:
 			for comment in subreddit.stream.comments():
 				# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
 				if comment.id in self.viewed: continue
-				self.viewed.append(comment.id)
+				self.__viewed.append(comment.id)
 				for matcher in self.__matchers:
 					matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
 					for m in matches:
@@ -96,8 +97,8 @@ class RedditBot:
 			Log.print(e, level=Log.ERROR)
 		finally:
 			Log.print('Storing data...', tag=self.name)
-			with open('cache', 'wb') as f: # save latest 100 viewed comments
-				pickle.dump(self.viewed[-100:], f)
+			with open('cache', 'wb') as f:
+				pickle.dump(self.__viewed, f)
 
 if __name__ == '__main__':
 	config.debug = True
