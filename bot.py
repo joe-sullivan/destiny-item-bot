@@ -90,15 +90,31 @@ class RedditBot:
 						msg = matcher.safe_execute(m)
 						if not config.debug: # suppress writing to reddit
 							comment.reply(msg)
-						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name)
+						else:
+							Log.print(msg, tag='reply', format='---{0}---\n{1}', level=Log.DEFAULT)
+						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name, level=Log.SUCCESS)
 		except KeyboardInterrupt:
-			Log.print('Shutting down', tag=self.name)
+			Log.print('Manual shut down', tag=self.name)
 		except Exception as e:
 			Log.print(e, level=Log.ERROR)
 		finally:
 			Log.print('Storing data...', tag=self.name)
 			with open('cache', 'wb') as f:
 				pickle.dump(self.__viewed, f)
+
+	@staticmethod
+	@Log.wrap('Building signature')
+	def signature(usr=None, msg=None, src=None):
+		sig = '---\n' # horizontal line
+		info = []
+		if usr:
+			info.append('^^made ^^by ^^[/u/{0}](http://reddit.com/user/{0})'.format(usr))
+		if src:
+			info.append('^^[github](%s)' % src)
+		sig += ' ^^| '.join(info)
+		if msg:
+			return msg + '\n\n' + sig
+		return sig
 
 if __name__ == '__main__':
 	config.debug = True

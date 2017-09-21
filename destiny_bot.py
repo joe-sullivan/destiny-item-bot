@@ -126,7 +126,8 @@ def find_weapon(name):
 if __name__ == '__main__':
 	def callback(weapon):
 		weapon_info = find_weapon(weapon)
-		return create_weapon_reply(weapon_info)
+		msg = create_weapon_reply(weapon_info)
+		return DestinyBot.signature(usr=config.author, msg=msg, src=config.source)
 	if config.debug:
 		Log.print('Debugging', format='--- {1} ---')
 	bot = DestinyBot()
