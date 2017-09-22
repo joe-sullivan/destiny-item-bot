@@ -132,6 +132,6 @@ if __name__ == '__main__':
 		Log.print('Debugging', format='--- {1} ---')
 	bot = DestinyBot()
 	item_pattern = '\[\[(.*?)\]\]'
-	weapon_matcher = Matcher('weapon', item_pattern, callback)
+	weapon_matcher = Matcher('weapon_matcher', item_pattern, callback)
 	bot.register_matcher(weapon_matcher)
 	bot.run()

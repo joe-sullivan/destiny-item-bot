@@ -42,8 +42,8 @@ class RedditBot:
 		self.__config = None
 		self.__viewed = None
 		self.__matchers = []
-		self.subreddits = subreddits
 		self.__name = name
+		self.subreddits = subreddits
 		self.r = praw.Reddit(username      = config.username,
 		                     password      = config.password,
 		                     client_id     = config.client_id,
@@ -81,22 +81,23 @@ class RedditBot:
 		try:
 			subreddit = self.r.subreddit('+'.join(self.subreddits))
 			for comment in subreddit.stream.comments():
-				# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
-				if comment.id in self.viewed: continue
-				self.__viewed.append(comment.id)
-				for matcher in self.__matchers:
-					matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
-					for m in matches:
-						msg = matcher.safe_execute(m)
-						if not config.debug: # suppress writing to reddit
-							comment.reply(msg)
-						else:
-							Log.print(msg, tag='reply', format='---{0}---\n{1}', level=Log.DEFAULT)
-						Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name, level=Log.SUCCESS)
+				try: # remain in this loop even if error occurs
+					# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
+					if comment.id in self.viewed: continue
+					self.__viewed.append(comment.id)
+					for matcher in self.__matchers:
+						matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
+						for m in matches:
+							msg = matcher.safe_execute(m)
+							if not config.debug: # suppress writing to reddit
+								comment.reply(msg)
+							else:
+								Log.print(msg, tag='reply', format='---{0}---\n{1}', level=Log.DEFAULT)
+							Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name, level=Log.SUCCESS)
+				except Exception as e:
+					Log.print(e, level=Log.ERROR)
 		except KeyboardInterrupt:
 			Log.print('Manual shut down', tag=self.name)
-		except Exception as e:
-			Log.print(e, level=Log.ERROR)
 		finally:
 			Log.print('Storing data...', tag=self.name)
 			with open('cache', 'wb') as f:
