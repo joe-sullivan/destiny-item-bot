@@ -95,7 +95,7 @@ class RedditBot:
 								Log.print(msg, tag='reply', format='---{0}---\n{1}', level=Log.DEFAULT)
 							Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name, level=Log.SUCCESS)
 				except Exception as e:
-					Log.print(e, tag=comment.permalink, level=Log.ERROR)
+					Log.print(e, tag=comment.permalink(fast=True), level=Log.ERROR)
 		except KeyboardInterrupt:
 			Log.print('Manual shut down', tag=self.name)
 		finally:

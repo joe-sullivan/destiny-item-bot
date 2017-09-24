@@ -77,7 +77,12 @@ def create_weapon_reply(info):
 	url = info['url'].replace('(', '\(')
 	url = url.replace(')', '\)')
 	msg = '[%s](%s)' % (info['name'], url)
-	msg += ' - %s %s (%s)' % (info['rarity'], info['type'], info['slot'])
+	rarity = info.get('rarity') or ''
+	weapon_type = info.get('type') or ''
+	msg += ' - %s %s' % (rarity, weapon_type)
+	slot = info.get('slot')
+	if slot:
+		msg += ' (%s)' % slot
 	msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
 	for k in info:
 		if k in ['name', 'rarity', 'type', 'slot', 'url']:
