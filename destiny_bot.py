@@ -6,6 +6,7 @@ from json import loads, dumps
 import re
 import urllib.request
 import urllib.parse
+import sys
 
 class Wiki:
 	URL_BASE = 'http://destiny.wikia.com/api/v1/'
@@ -80,7 +81,6 @@ class DestinyBot(RedditBot):
 def create_reply(info):
 	url = info['url'].replace('(', '\(')
 	url = url.replace(')', '\)')
-	name = info.get('name') or ''
 	msg = '[%s](%s)' % (info['name'], url)
 	rarity = info.get('rarity') or ''
 	item_type = info.get('type') or ''
@@ -159,10 +159,15 @@ if __name__ == '__main__':
 		info = find_item(item)
 		msg = create_reply(info)
 		return DestinyBot.signature(usr=config.author, msg=msg, src=config.source)
+
 	if config.debug:
 		Log.print('Debugging', format='--- {1} ---')
-	bot = DestinyBot()
-	item_pattern = '\[\[(.*?)\]\]'
-	item_matcher = Matcher('item_matcher', item_pattern, callback)
-	bot.register_matcher(item_matcher)
-	bot.run()
+
+	if len(sys.argv) > 1: # test item lookup
+		print(callback(' '.join(sys.argv[1:])))
+	else:
+		bot = DestinyBot()
+		item_pattern = '\[\[(.*?)\]\]'
+		item_matcher = Matcher('item_matcher', item_pattern, callback)
+		bot.register_matcher(item_matcher)
+		bot.run()
