@@ -9,6 +9,10 @@ import urllib.parse
 
 class Wiki:
 	URL_BASE = 'http://destiny.wikia.com/api/v1/'
+	WEAPON_PRIMARY = ['Scout Rifle', 'Pulse Rifle', 'Auto Rifle', 'Hand Cannon', 'Submachine Gun', 'Sidearm']
+	WEAPON_HEAVY = ['Shotgun', 'Sniper Rifle', 'Fusion Rifle', 'Sword', 'Rocket Launcher', 'Grenade Launcher']
+	WEAPON = WEAPON_PRIMARY + WEAPON_HEAVY
+	ARMOR = ['Helmet', 'Gauntlets', 'Chest Armor', 'Leg Armor']
 
 	@staticmethod
 	@Log.wrap('', format='[*] {2}')
@@ -73,29 +77,36 @@ class DestinyBot(RedditBot):
 		subreddits = ['DestinyTheGame']
 		super().__init__(user_agent, subreddits, 'DestinyBot')
 
-def create_weapon_reply(info):
+def create_reply(info):
 	url = info['url'].replace('(', '\(')
 	url = url.replace(')', '\)')
+	name = info.get('name') or ''
 	msg = '[%s](%s)' % (info['name'], url)
 	rarity = info.get('rarity') or ''
-	weapon_type = info.get('type') or ''
-	msg += ' - %s %s' % (rarity, weapon_type)
+	item_type = info.get('type') or ''
+	if rarity or item_type:
+		msg += ' - %s %s' % (rarity, item_type)
 	slot = info.get('slot')
 	if slot:
 		msg += ' (%s)' % slot
-	msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
+	table = ''
 	for k in info:
 		if k in ['name', 'rarity', 'type', 'slot', 'url']:
 			continue
-		msg += '%s | %s\n' % (k.ljust(13), info[k].ljust(9))
+		v = info[k].replace('[[', '').replace(']]', '')
+		table += '%s | %s\n' % (k.ljust(13), v.ljust(9))
+	if table:
+		msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
+		msg += table
 	return msg
 
-def format_weapon_info(info):
-	key_filter = ['name',
+def format_info(info):
+	key_filter = [# weapons
+	              'name',
 	              'slot',
 	              'rarity',
 	              'type',
-	              # 'manufacturer',
+	              'manufacturer',
 	              'impact',
 	              'range',
 	              'recoil',
@@ -105,7 +116,17 @@ def format_weapon_info(info):
 	              'zoom',
 	              ('rate', 'rate of fire'),
 	              ('aim', 'aim assist'),
-	              ('equipspeed', 'equip speed')]
+	              ('equipspeed', 'equip speed'),
+	              # armor
+	              ('armorset', 'set'),
+	              # armor d1
+	              'discipline',
+	              'strength',
+	              'intellect',
+	              # armor d2
+	              'mobility',
+	              'resilience',
+	              'recovery']
 	d = OrderedDict()
 	for k in key_filter:
 		try:
@@ -117,21 +138,26 @@ def format_weapon_info(info):
 			pass
 	return d
 
-def find_weapon(name):
+def find_item(name):
 	json_search = Wiki.search(name)
 	item_id = json_search['items'][0]['id']
 	item_url = Wiki.item_lookup(item_id)
 	source = Wiki.page_source(item_url)
-	info = Wiki.item_infobox(source)
-	weapon_info = format_weapon_info(info)
-	weapon_info['url'] = item_url # include url with weapon info
-	# Wiki.pretty_print(weapon_info)
-	return weapon_info
+	try:
+		info = Wiki.item_infobox(source)
+	except:
+		info = None
+	info = format_info(info)
+	info['url'] = item_url # include url with info
+	if not info.get('name'):
+		info['name'] = name
+	# Wiki.pretty_print(info)
+	return info
 
 if __name__ == '__main__':
-	def callback(weapon):
-		weapon_info = find_weapon(weapon)
-		msg = create_weapon_reply(weapon_info)
+	def callback(item):
+		info = find_item(item)
+		msg = create_reply(info)
 		return DestinyBot.signature(usr=config.author, msg=msg, src=config.source)
 	if config.debug:
 		Log.print('Debugging', format='--- {1} ---')
