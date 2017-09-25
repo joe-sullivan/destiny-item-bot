@@ -49,7 +49,7 @@ class Wiki:
 	@staticmethod
 	@Log.wrap('extracting Infobox data')
 	def item_infobox(raw):
-		pattern = '\{\{Infobox(.*?)\}\}'
+		pattern = '\{\{Infobox(.*?)\n\}\}'
 		match = re.findall(pattern, raw, re.DOTALL)[0]
 		info = {}
 		for line in match.split('\n'):
