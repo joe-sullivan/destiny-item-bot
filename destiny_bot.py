@@ -97,7 +97,7 @@ def create_reply(info):
 		v = info[stat]
 		table += '%s | %s\n' % (k.ljust(13), v.ljust(9))
 	if table:
-		msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
+		msg += '\n\n     Stat     |  Value  \n------------- | --------\n'
 		msg += table
 	return msg.replace('[[', '').replace(']]', '')
 
