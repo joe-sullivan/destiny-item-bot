@@ -5,7 +5,7 @@ try:
 	import config
 except ImportError:
 	print('Missing config.py: see README for more information')
-	exit()
+	raise SystemExit
 import pickle
 import praw
 import re
