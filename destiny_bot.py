@@ -94,12 +94,12 @@ def create_reply(info):
 		if stat in ['name', 'rarity', 'type', 'slot', 'url']:
 			continue
 		k = stat.title()
-		v = info[stat].replace('[[', '').replace(']]', '')
+		v = info[stat]
 		table += '%s | %s\n' % (k.ljust(13), v.ljust(9))
 	if table:
 		msg += '\n\n     Stat     |  Value  \n--------------|---------\n'
 		msg += table
-	return msg
+	return msg.replace('[[', '').replace(']]', '')
 
 def format_info(info):
 	key_filter = [# weapons
