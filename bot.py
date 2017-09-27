@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
 from verbose import Log
-import config
+try:
+	import config
+except ImportError:
+	print('Missing config.py: see README for more information')
+	exit()
 import pickle
 import praw
 import re
@@ -26,6 +30,9 @@ class Matcher:
 	@property
 	def pattern(self):
 		return self.__ptrn
+
+	def get(self, text):
+		return re.findall(self.pattern, text, re.DOTALL)
 
 	def safe_execute(self, context):
 		try:
@@ -86,8 +93,7 @@ class RedditBot:
 					if comment.id in self.viewed: continue
 					self.__viewed.append(comment.id)
 					for matcher in self.__matchers:
-						matches = re.findall(matcher.pattern, comment.body, re.DOTALL)
-						for m in matches:
+						for m in matcher.get(comment.body):
 							msg = matcher.safe_execute(m)
 							if not config.debug: # suppress writing to reddit
 								comment.reply(msg)
