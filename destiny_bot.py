@@ -93,11 +93,9 @@ def create_reply(info):
 	for stat in info:
 		if stat in ['name', 'rarity', 'type', 'slot', 'url']:
 			continue
-		k = stat.title()
-		v = info[stat]
-		table += '%s | %s\n' % (k.ljust(13), v.ljust(9))
+		table += '%s | %s\n' % (stat.title(), info[stat])
 	if table:
-		msg += '\n\n     Stat     |  Value  \n------------- | --------\n'
+		msg += '\n\nStat | Value\n--- | ---\n'
 		msg += table
 	return msg.replace('[[', '').replace(']]', '')
 
