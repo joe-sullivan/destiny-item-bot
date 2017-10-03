@@ -72,7 +72,7 @@ class RedditBot:
 				self.__viewed = []
 			else:
 				Log.print('loaded previously viewed comments', tag=self.name)
-		self.__viewed = self.__viewed[-1000:] # save latest 100 viewed comments
+		self.__viewed = self.__viewed[-100:] # save latest 100 viewed comments
 		return self.__viewed
 
 	@Log.wrap('registered new matcher', format='[{0}] {1}: {3.name}')
