@@ -99,7 +99,7 @@ class RedditBot:
 								comment.reply(msg)
 							else:
 								Log.print(msg, tag='reply', format='---{0}---\n{1}', level=Log.DEFAULT)
-							Log.print('Replied to %s (%s)' % (comment.id, m), tag=matcher.name, level=Log.SUCCESS)
+							Log.print('Replied to %s (%s):\n%s' % (comment.id, m, comment.body), tag=matcher.name, level=Log.SUCCESS)
 				except Exception as e:
 					Log.print(e, tag=comment.permalink(fast=True), level=Log.ERROR)
 		except KeyboardInterrupt:
