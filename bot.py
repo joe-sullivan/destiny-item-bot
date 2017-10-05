@@ -91,7 +91,7 @@ class RedditBot:
 				try: # remain in this loop even if error occurs
 					# Log.print('New comment: %s' % comment.body[:20], tag=comment.subreddit)
 					if comment.id in self.viewed: continue
-					self.__viewed.append(comment.id)
+					self.viewed.append(comment.id)
 					for matcher in self.__matchers:
 						for m in matcher.get(comment.body):
 							msg = matcher.safe_execute(m)
@@ -107,7 +107,7 @@ class RedditBot:
 		finally:
 			Log.print('Storing data...', tag=self.name)
 			with open('cache', 'wb') as f:
-				pickle.dump(self.__viewed, f)
+				pickle.dump(self.viewed, f)
 
 	@staticmethod
 	@Log.wrap('Building signature')
