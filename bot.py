@@ -47,7 +47,7 @@ class RedditBot:
 	             subreddits=['all'],
 	             name='bot'):
 		self.__config = None
-		self.__viewed = None
+		self.__viewed = []
 		self.__matchers = []
 		self.__name = name
 		self.subreddits = subreddits
@@ -63,7 +63,7 @@ class RedditBot:
 
 	@property
 	def viewed(self):
-		if self.__viewed is None:
+		if not self.__viewed:
 			try:
 				with open('cache', 'rb') as f:
 					self.__viewed = pickle.load(f)
